@@ -1,0 +1,60 @@
+# PocketSOC 0.1 — trusted operator config; all times and reports use UTC.
+listeners:
+  - {protocol: ssh, host: 127.0.0.1, port: 2222}
+  - {protocol: telnet, host: 127.0.0.1, port: 2323}
+  - {protocol: http, host: 127.0.0.1, port: 8080}
+limits:
+  timeout_seconds: 8
+  max_connections: 32
+  max_bytes: 8192
+privacy:
+  capture_passwords: false  # Opt in only in an authorized, isolated lab.
+monitor:
+  paths: []  # Add readable auth/system log paths; Android logs are not universally accessible.
+  start_at_end: true
+  store_all_lines: false  # Default stores only a generic record of matching log lines.
+  poll_seconds: 1
+storage:
+  database: data/events.sqlite3
+  retention_days: 14
+reports:
+  directory: reports
+  html: true
+telegram:
+  enabled: false
+  min_severity: medium
+  max_per_minute: 10
+  dedup_seconds: 300
+rules:
+  - id: honeypot_credentials
+    description: Credential attempt on a decoy listener
+    kinds: [credential_attempt]
+    pattern: '.*'
+    severity: high
+    threshold: 1
+    window_seconds: 60
+    mitre: T1110.001
+  - id: auth_failure
+    description: Failed authentication in a monitored log
+    kinds: [log_line]
+    pattern: 'failed password|authentication failure|invalid user|login failed'
+    severity: low
+    threshold: 1
+    window_seconds: 60
+    mitre: T1110.001
+  - id: repeated_auth_failure
+    description: Repeated failed authentication from one observed source
+    kinds: [log_line]
+    pattern: 'failed password|authentication failure|invalid user|login failed'
+    severity: medium
+    threshold: 3
+    window_seconds: 60
+    mitre: T1110.001
+  - id: brute_force
+    description: Possible brute force — five failures in two minutes
+    kinds: [log_line]
+    pattern: 'failed password|authentication failure|invalid user|login failed'
+    severity: high
+    threshold: 5
+    window_seconds: 120
+    mitre: T1110.001
